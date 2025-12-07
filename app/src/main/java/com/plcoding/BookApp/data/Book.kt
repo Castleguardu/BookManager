@@ -12,6 +12,10 @@ data class Book(
     val id: Int = 0,
     val title: String,
     val author: String,
-    val price: Double
+    val price: Double,
+    val coverUri: String? = null,
+    val description: String = "",
+    val rating: Float = 0.0f,
+    // 0 = Unread, 1 = Want to Read, 2 = Read
+    val status: Int = 0 
 ) : Parcelable
-
