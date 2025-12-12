@@ -17,13 +17,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import coil.compose.AsyncImage
 import com.plcoding.material3expressiveguide.data.Book
+import com.plcoding.material3expressiveguide.navigation.Screen
+import com.plcoding.material3expressiveguide.ui.BookDetailScreen
 import com.plcoding.material3expressiveguide.viewmodel.BookViewModel
 
 class MainActivity : ComponentActivity() {
@@ -55,15 +62,32 @@ class MainActivity : ComponentActivity() {
 fun BookApp() {
     val viewModel: BookViewModel = viewModel()
     val isAdmin by viewModel.isAdmin.collectAsState()
+    val navController = rememberNavController()
     
     if (isAdmin == null) {
         LoginScreen(onLogin = viewModel::login)
     } else {
-        BookListScreen(
-            viewModel = viewModel,
-            isAdmin = isAdmin!!,
-            onLogout = viewModel::logout
-        )
+        // Navigation Host
+        NavHost(navController = navController, startDestination = Screen.BookList) {
+            composable<Screen.BookList> {
+                BookListScreen(
+                    viewModel = viewModel,
+                    isAdmin = isAdmin!!,
+                    onLogout = viewModel::logout,
+                    onBookClick = { book ->
+                        navController.navigate(Screen.BookDetail(book.id))
+                    }
+                )
+            }
+            composable<Screen.BookDetail> { backStackEntry ->
+                val detail: Screen.BookDetail = backStackEntry.toRoute()
+                BookDetailScreen(
+                    bookId = detail.bookId,
+                    viewModel = viewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+        }
     }
 }
 
@@ -131,7 +155,8 @@ fun LoginScreen(onLogin: (Boolean) -> Unit) {
 fun BookListScreen(
     viewModel: BookViewModel,
     isAdmin: Boolean,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onBookClick: (Book) -> Unit
 ) {
     val books by viewModel.books.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -180,9 +205,10 @@ fun BookListScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(books) { book ->
-                BookItem(book, isAdmin) {
-                    viewModel.deleteBook(book)
-                }
+                BookItem(book, isAdmin, 
+                    onClick = { onBookClick(book) },
+                    onDelete = { viewModel.deleteBook(book) }
+                )
             }
             item { 
                 Spacer(modifier = Modifier.height(80.dp)) // Bottom padding for FAB
@@ -202,12 +228,14 @@ fun BookListScreen(
 }
 
 @Composable
-fun BookItem(book: Book, isAdmin: Boolean, onDelete: () -> Unit) {
+fun BookItem(book: Book, isAdmin: Boolean, onClick: () -> Unit, onDelete: () -> Unit) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier

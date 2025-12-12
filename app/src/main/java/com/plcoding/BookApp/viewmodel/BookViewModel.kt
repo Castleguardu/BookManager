@@ -19,10 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jsoup.Jsoup
-import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
+import com.plcoding.material3expressiveguide.utils.DoubanScraper
 
 class BookViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -102,87 +99,20 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     fun fetchDoubanBooks() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val url = "https://book.douban.com/top250"
-                val doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .timeout(10000)
-                    .get()
-                
-                val elements = doc.select("tr.item")
-                for (element in elements) {
+                val scrapedBooks = DoubanScraper.scrapeTop250(getApplication())
+                for (book in scrapedBooks) {
                     try {
-                        // Title
-                        val titleElement = element.select("div.pl2 a")
-                        val title = titleElement.attr("title").ifEmpty { titleElement.text().replace("\n", "").trim() }
-                        
-                        // Cover
-                        val imgElement = element.select("a.nbg img")
-                        val coverUrl = imgElement.attr("src")
-                        
-                        // Info (Author, Price, etc.)
-                        val infoText = element.select("p.pl").text()
-                        val parts = infoText.split("/")
-                        val author = parts.firstOrNull()?.trim() ?: "Unknown"
-                        val priceStr = parts.lastOrNull()?.trim()
-                        val price = priceStr?.replace("元", "")?.replace("CNY", "")?.trim()?.toDoubleOrNull() ?: 0.0
-                        
-                        // Rating
-                        val ratingStr = element.select("span.rating_nums").text()
-                        val rating = ratingStr.toFloatOrNull() ?: 0.0f
-                        
-                        // Description (Quote)
-                        val quote = element.select("span.inq").text()
-
-                        // Download Image
-                        val localCoverPath = downloadImage(coverUrl)
-
-                        val book = Book(
-                            title = title,
-                            author = author,
-                            price = price,
-                            coverUri = localCoverPath ?: coverUrl,
-                            description = quote,
-                            rating = rating,
-                            status = 0
-                        )
-                        
                         iBookManager?.addBook(book)
-                        
-                    } catch (e: Exception) {
+                    } catch (e: RemoteException) {
                         e.printStackTrace()
-                        Log.e(TAG, "Error parsing book: ${e.message}")
                     }
                 }
-                
                 // Refresh list
                 fetchBooks()
-                
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e(TAG, "Error fetching Douban: ${e.message}")
             }
-        }
-    }
-
-    private fun downloadImage(url: String): String? {
-        if (url.isEmpty()) return null
-        try {
-            val fileName = url.substringAfterLast("/")
-            val file = File(getApplication<Application>().filesDir, fileName)
-            
-            // If file already exists, return path (simple cache)
-            if (file.exists()) return file.absolutePath
-
-            val connection = URL(url).openConnection()
-            connection.connect()
-            val input = connection.getInputStream()
-            val output = FileOutputStream(file)
-            input.use { it.copyTo(output) }
-            output.close()
-            return file.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return null
         }
     }
 
