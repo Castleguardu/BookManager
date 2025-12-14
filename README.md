@@ -1,72 +1,47 @@
 # BookManager (Material3ExpressiveGuide)
 
-An advanced, offline-first Android application designed to demonstrate **Modern Android Architecture** and **Inter-Process Communication (IPC)**.
+## Overview (EN)
+Offline-first Android demo that packs a client-server split into one app: UI in the main process (Jetpack Compose) and data in a remote process (Room DB) via AIDL. Shows OCR note-taking with CameraX + ML Kit and Douban scraping with offline cover caching.
 
-一个先进的、离线优先的 Android 应用程序，旨在演示 **现代 Android 架构** 和 **跨进程通信 (IPC)**。
+## 概览 (ZH)
+离线优先的 Android 示例，单 App 内模拟前后端分离：主进程负责 Compose UI，远程进程持有 Room 数据库并通过 AIDL 交互。支持 CameraX + ML Kit OCR 做笔记，以及豆瓣 Top250 抓取与封面离线缓存。
 
-This project simulates a Client-Server architecture within a single app, mimicking a robust system design often found in complex enterprise or framework-level Android development.
+## Key Tech (EN)
+- Multi-process IPC: AIDL + Binder + RemoteCallbackList
+- Data: Room (Book, Note) with duplicate guard on insert
+- UI: Jetpack Compose (Material3), type-safe Navigation (Kotlin Serialization)
+- OCR: CameraX + ML Kit Text Recognition (Chinese, single-shot capture)
+- Scraping: Jsoup for Douban Top 250, local cover caching
+- Image: Coil; Async: Coroutines/Flow
 
-本项目在一个 App 内部模拟了 Client-Server 架构，复现了在复杂企业级或框架级 Android 开发中常见的稳健系统设计。
+## 关键技术 (ZH)
+- 多进程 IPC：AIDL + Binder + RemoteCallbackList
+- 数据：Room（书籍/笔记），插入防重复
+- 界面：Jetpack Compose (Material3)，类型安全导航（Kotlin Serialization）
+- OCR：CameraX + ML Kit 文字识别（中文，单次拍照）
+- 抓取：Jsoup 豆瓣 Top250，封面本地缓存
+- 图片：Coil；异步：Coroutines/Flow
 
-## 🌟 Key Features & Highlights (核心亮点)
+## Features (EN)
+- Book list served from remote process Room DB; listener updates via RemoteCallbackList
+- Douban scraper populates books; covers cached for offline use
+- OCR reading session: tap-to-capture → recognize → save as note (notes stored per book)
+- Notes list with fixed-height cards, preview lines, timestamp, tap to open full dialog
 
-### 1. Multi-Process Architecture (IPC with AIDL) | 多进程架构
-Unlike standard apps that run in a single process, BookManager splits its responsibilities:
-与运行在单一进程的普通 App 不同，BookManager 将职责分离：
+## 功能 (ZH)
+- 书库在远程进程的 Room 中维护；监听回调用 RemoteCallbackList 保持同步
+- 豆瓣抓取填充书籍，封面缓存以便离线浏览
+- 阅读场景 OCR：点击拍照→识别→保存为笔记（按书籍归档）
+- 笔记列表固定高度卡片，预览+时间戳，点开查看全文
 
--   **UI Process (`com.plcoding.BookApp`)**: Handles all Jetpack Compose UI and user interactions.
-    -   **UI 进程**: 处理所有 Jetpack Compose UI 和用户交互。
--   **Service Process (`:remote`)**: Runs `BookManagerService` in a separate background process. This service owns the Room Database and acts as the "Server".
-    -   **Service 进程**: 在独立的后台进程中运行 `BookManagerService`。该服务持有 Room 数据库并充当“服务端”。
+## Run (EN)
+1) Clone  
+2) Open in Android Studio (use bundled JDK or set `JAVA_HOME`)  
+3) Build & Run (minSdk 24, targetSdk 36)  
+4) Refresh to scrape Douban; use camera to OCR and save notes
 
-**Core Technologies (核心技术):**
--   **AIDL**: Used for defining the interface between the UI and the remote Service.
--   **Binder**: The underlying mechanism for data transport.
--   **Thread Management**: Handles Binder thread pool concurrency when accessing the database.
-
-### 2. 💡 Highlight: Robust Callback Management with `RemoteCallbackList` | 核心难点：RemoteCallbackList
-One of the most challenging aspects of IPC is managing listeners across process boundaries.
-跨进程通信中最具挑战性的方面之一是如何跨越进程边界管理监听器。
-
--   **The Problem (痛点)**: When you pass a listener object (e.g., `INewBookArrivedListener`) from Client to Server, the Binder mechanism generates a *new proxy object* in the Server process. This means `clientListener != serverListener`. Standard `List.remove(listener)` calls fail because the object references don't match.
-    -   **问题**: 当你将一个监听器对象从客户端传递给服务端时，Binder 机制会在服务端生成一个*新的代理对象*。这意味着 `clientListener != serverListener`。普通的 `List.remove()` 会失败，因为对象引用不一致。
-
--   **The Solution (解决方案)**: We utilize `RemoteCallbackList`.
-    -   It automatically tracks the mapping between the client's original Binder and the server's proxy.
-        -   它自动跟踪客户端原始 Binder 和服务端代理对象之间的映射关系。
-    -   It handles **Death Recipient** automatically: if the Client process crashes, `RemoteCallbackList` automatically removes the dead listener, preventing memory leaks and `DeadObjectException` on the Server side.
-        -   它自动处理 **Death Recipient**：如果客户端进程崩溃，它会自动移除死掉的监听器，防止服务端出现内存泄漏和 `DeadObjectException`。
-    -   This is the standard, production-grade way to implement Observer pattern across processes in Android.
-        -   这是在 Android 中实现跨进程观察者模式的标准、生产级方案。
-
-### 3. Modern UI with Type-Safe Navigation | 现代 UI 与类型安全导航
--   **Jetpack Compose**: 100% declarative UI (100% 声明式 UI).
--   **Type-Safe Navigation (Compose 2.8.0+)**: Moved away from error-prone string routes (e.g., `"detail/{id}"`) to **Kotlin Serialization**.
-    -   摒弃了容易出错的字符串路由，全面转向 **Kotlin Serialization**。
-    -   Routes are defined as `@Serializable` objects. (路由定义为序列化对象)
-    -   Arguments are passed as type-safe data classes, ensuring compile-time safety. (参数通过类型安全的数据类传递，确保编译期安全)
-
-### 4. Rich Content & Web Scraping | 内容抓取
--   **Jsoup Integration**: Implements a custom scraper to fetch Top 250 books from Douban.
-    -   集成 Jsoup 实现自定义爬虫，抓取豆瓣 Top 250 书籍。
--   **Offline-First Images**: Scraped cover images are downloaded and cached locally, ensuring the app works perfectly without internet access after the initial sync.
-    -   抓取的封面图片会自动本地缓存，确保首次同步后，即使断网也能完美运行。
-
-## Tech Stack (技术栈)
--   **Language**: Kotlin
--   **UI**: Jetpack Compose (Material3)
--   **Architecture**: MVVM + Clean Architecture principles
--   **Data**: Room Database (SQLite)
--   **IPC**: AIDL, Binder, RemoteCallbackList
--   **Async**: Coroutines & Flow
--   **Network**: Jsoup (HTML Parsing)
--   **Image Loading**: Coil
--   **Serialization**: Kotlinx Serialization
-
-## Getting Started (如何运行)
-1.  Clone the repository. (克隆仓库)
-2.  Build and run the app. (编译并运行)
-3.  Login with default credentials:
-    -   **User**: `user`
-    -   **Password**: `123456`
-4.  Click the "Refresh" icon in the top bar to scrape book data. (点击右上角刷新图标抓取数据)
+## 运行 (ZH)
+1) 克隆项目  
+2) 用 Android Studio 打开（使用自带 JDK 或配置 `JAVA_HOME`）  
+3) 编译运行（minSdk 24，targetSdk 36）  
+4) 右上刷新抓取豆瓣；打开相机拍照识别并保存笔记

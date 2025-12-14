@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.plcoding.material3expressiveguide.IBookManager
 import com.plcoding.material3expressiveguide.INewBookArrivedListener
 import com.plcoding.material3expressiveguide.data.Book
+import com.plcoding.material3expressiveguide.data.Note
 import com.plcoding.material3expressiveguide.service.BookManagerService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,9 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _serviceConnected = MutableStateFlow(false)
     val serviceConnected: StateFlow<Boolean> = _serviceConnected.asStateFlow()
+
+    private val _notes = MutableStateFlow<List<Note>>(emptyList())
+    val notes: StateFlow<List<Note>> = _notes.asStateFlow()
     
     // Login State: null = not logged in, true = admin, false = user
     private val _isAdmin = MutableStateFlow<Boolean?>(null)
@@ -90,6 +94,29 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val list = iBookManager?.bookList ?: emptyList()
                 _books.value = list
+            } catch (e: RemoteException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun fetchNotes(bookId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val list = iBookManager?.getNotesForBook(bookId) ?: emptyList()
+                _notes.value = list
+            } catch (e: RemoteException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun addNote(bookId: Int, content: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val note = Note(bookId = bookId, content = content)
+                iBookManager?.addNote(note)
+                fetchNotes(bookId)
             } catch (e: RemoteException) {
                 e.printStackTrace()
             }

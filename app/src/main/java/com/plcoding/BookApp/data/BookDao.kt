@@ -15,5 +15,8 @@ interface BookDao {
 
     @Delete
     fun delete(book: Book)
+
+    @Query("SELECT COUNT(*) FROM books WHERE title = :title AND author = :author")
+    fun count(title: String, author: String): Int
 }
 

@@ -9,6 +9,7 @@ import com.plcoding.material3expressiveguide.IBookManager
 import com.plcoding.material3expressiveguide.INewBookArrivedListener
 import com.plcoding.material3expressiveguide.data.AppDatabase
 import com.plcoding.material3expressiveguide.data.Book
+import com.plcoding.material3expressiveguide.data.Note
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,8 +34,14 @@ class BookManagerService : Service() {
 
         override fun addBook(book: Book) {
             Log.d(TAG, "addBook called: $book")
-            database.bookDao().insert(book)
-            onNewBookArrived(book)
+            // Prevent duplicates (simple check by Title + Author)
+            val exists = database.bookDao().count(book.title, book.author) > 0
+            if (!exists) {
+                database.bookDao().insert(book)
+                onNewBookArrived(book)
+            } else {
+                Log.d(TAG, "Book already exists, skipping: ${book.title}")
+            }
         }
         
         override fun deleteBook(book: Book) {
@@ -43,6 +50,21 @@ class BookManagerService : Service() {
              // Ensure the passed book object has the correct ID.
              database.bookDao().delete(book)
              // In a real app, we might want a 'onBookDeleted' callback too.
+        }
+
+        override fun getNotesForBook(bookId: Int): List<Note> {
+            Log.d(TAG, "getNotesForBook called: bookId=$bookId from ${getCallingPid()}")
+            return database.noteDao().getNotesForBookSync(bookId)
+        }
+
+        override fun addNote(note: Note) {
+            Log.d(TAG, "addNote called: $note")
+            database.noteDao().insertNoteSync(note)
+        }
+
+        override fun deleteNote(note: Note) {
+            Log.d(TAG, "deleteNote called: $note")
+            database.noteDao().deleteNoteSync(note)
         }
 
         override fun registerListener(listener: INewBookArrivedListener?) {

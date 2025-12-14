@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.play.services.mlkit.text.recognition)
+    implementation(libs.mlkit.text.recognition.chinese)
 
     // Room
     implementation(libs.androidx.room.runtime)
