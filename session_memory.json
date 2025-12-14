@@ -1,0 +1,56 @@
+{
+  "project_meta": {
+    "name": "BookManager (Material3ExpressiveGuide)",
+    "goal": "Offline-first, dual-process Android Book App with iOS-style UI & advanced features (IPC, OCR, Scraping).",
+    "tech_stack": [
+      "Kotlin",
+      "Jetpack Compose (Material3)",
+      "Room (SQLite)",
+      "AIDL (Multi-process IPC)",
+      "Coil",
+      "Jsoup",
+      "CameraX + ML Kit (OCR)",
+      "Navigation Compose (Type-Safe)"
+    ]
+  },
+  "architecture": {
+    "pattern": "Client-Server in Single App via IPC",
+    "components": {
+      "Client (UI)": "MainActivity (Default Process). Binds to Service. Uses Type-Safe Navigation.",
+      "Server (Service)": "BookManagerService (:remote Process). Owns Room DB. Handles concurrent Binder calls.",
+      "Communication": "AIDL + RemoteCallbackList for robust listener management across processes."
+    }
+  },
+  "progress_log": [
+    {
+      "status": "COMPLETED",
+      "items": [
+        "Core: Multi-process AIDL architecture with RemoteCallbackList.",
+        "Data: Room DB v3 (Books + Notes tables).",
+        "UI: Apple-style Material3 Design, Type-Safe Navigation Graph.",
+        "Net: Douban Top 250 Scraper (Jsoup) with local image caching.",
+        "Feat: Book Detail Screen (Immersive UI).",
+        "Feat: Reading Session with OCR Note Capture (CameraX + ML Kit)."
+      ]
+    },
+    {
+      "status": "PENDING",
+      "items": [
+        "Connect OCR result to ViewModel/DB (Save Note functionality).",
+        "Implement Note List UI in ReadingSessionScreen.",
+        "Implement Barcode Scanning for ISBN.",
+        "Data Backup/Export."
+      ]
+    }
+  ],
+  "key_mechanisms": {
+    "ipc_safety": "Uses RemoteCallbackList to handle cross-process listener death/unregistration.",
+    "scraping": "DoubanScraper util fetches HTML, parses via Jsoup, downloads covers to app storage.",
+    "ocr": "ReadingSessionScreen uses CameraX Analysis + ML Kit to detect text in real-time."
+  },
+  "current_context": {
+    "last_action": "Implemented OCR UI & Logic. Fixed ML Kit dependency version.",
+    "immediate_task": "Wire up 'Save Note' button in ReadingSessionScreen to persist OCR text to Room.",
+    "user_instruction": "Summarize project state for handover/successor."
+  }
+}

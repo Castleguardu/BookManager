@@ -30,7 +30,8 @@ import com.plcoding.material3expressiveguide.viewmodel.BookViewModel
 fun BookDetailScreen(
     bookId: Int,
     viewModel: BookViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onStartReading: () -> Unit
 ) {
     val books by viewModel.books.collectAsState()
     val book = books.find { it.id == bookId }
@@ -224,7 +225,7 @@ fun BookDetailScreen(
             
             // Action Button
             Button(
-                onClick = { /* TODO: Start Reading or Update Status */ },
+                onClick = onStartReading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
@@ -232,7 +233,7 @@ fun BookDetailScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Start Reading", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Start Reading / Add Notes", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
             
             Spacer(modifier = Modifier.height(48.dp))

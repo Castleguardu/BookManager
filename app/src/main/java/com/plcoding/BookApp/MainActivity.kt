@@ -32,6 +32,7 @@ import com.plcoding.material3expressiveguide.data.Book
 import com.plcoding.material3expressiveguide.navigation.Screen
 import com.plcoding.material3expressiveguide.ui.BookDetailScreen
 import com.plcoding.material3expressiveguide.viewmodel.BookViewModel
+import com.plcoding.material3expressiveguide.ui.ReadingSessionScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +59,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+
 @Composable
 fun BookApp() {
     val viewModel: BookViewModel = viewModel()
@@ -83,6 +86,15 @@ fun BookApp() {
                 val detail: Screen.BookDetail = backStackEntry.toRoute()
                 BookDetailScreen(
                     bookId = detail.bookId,
+                    viewModel = viewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onStartReading = { navController.navigate(Screen.ReadingSession(detail.bookId)) }
+                )
+            }
+            composable<Screen.ReadingSession> { backStackEntry ->
+                val session: Screen.ReadingSession = backStackEntry.toRoute()
+                ReadingSessionScreen(
+                    bookId = session.bookId,
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() }
                 )
